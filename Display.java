@@ -1,10 +1,10 @@
 public class Display {
     public static void print(Expr expr) {
-        System.out.println(expr2String(expr));
+        System.out.println("Result: " + expr2String(expr));
     }
 
     public static void print(ExprS exprS) {
-        System.out.println(exprS2String(exprS));
+        System.out.println("Result: " + exprS2String(exprS));
     }
 
     public static String expr2String(Expr expr) {
