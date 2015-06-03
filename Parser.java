@@ -38,7 +38,7 @@ public class Parser {
         }
     }
 
-    // Atom  => % ArgsS . Term
+    // Atom  => % Args . Term
     //        | ( Term )
     //        | Id
     private static Match parseAtom(Token[] tokens) {
@@ -70,8 +70,8 @@ public class Parser {
         }
     }
 
-    // ArgsS  => Id ArgsS
-    //        | EmptyS
+    // Args  => Id Args
+    //        | Empty
     private static Match parseArgsS(Token[] tokens) {
         try {
             ArgsS expr;
