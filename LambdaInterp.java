@@ -10,7 +10,7 @@ public class LambdaInterp {
 
     private static void repl() {
         do {
-            System.out.print(">");
+            System.out.print("> ");
         } while (readEvaluatePrint());
     }
 

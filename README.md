@@ -14,38 +14,38 @@ Java 8
 
 ## Building and Running
 
-    $javac LambdaInterp.java
-    $java  LambdaInterp
+    $ javac LambdaInterp.java
+    $ java  LambdaInterp
 
 ## Usage
 
     > %x.x
     Result: %x.x
 
-    >%x.x %y.y
+    > %x.x %y.y
     Result: %x.(x %y.y)
 
 `lambda` can take any number of parameters. It's syntactic sugar, and in the `core language` there is only one parameter:
 
-    >%x y z.x y z
+    > %x y z.x y z
     Result: %x.%y.%z.((x y) z)
 
 Or `lambda` can take none parameter:
 
-    >%.%x.x
+    > %.%x.x
     Result: %.%x.x
 
 Reduce:
 
-    >(%s.s s) %x.x %y.y
+    > (%s.s s) %x.x %y.y
     Result: %y.y
 
 ### Define Function
 
 Use KEYWORD `define` to define funtions:
 
-    >define a = %x.x
-    >a
+    > define a = %x.x
+    > a
     Result: %x.x
 
 There are some definitions in `PreDefinition.java`:
@@ -58,13 +58,13 @@ There are some definitions in `PreDefinition.java`:
 
 By default, you can use function `if` as follow:
 
-    >if true (%x.x) (%y.y)
+    > if true (%x.x) (%y.y)
     Result: %x.x
 
-    >if false (%x.x) (%y.y)
+    > if false (%x.x) (%y.y)
     Result: %y.y
 
 Because of `lazy evaluation`, the following expressions is valid, and no infinite loop:
 
-    >if true (%x.x) ((%x.x x) %x.x x)
+    > if true (%x.x) ((%x.x x) %x.x x)
     Result: %x.x
