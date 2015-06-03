@@ -35,6 +35,11 @@ Or `lambda` can take none parameter:
     >%.%x.x
     Result: %.%x.x
 
+Reduce:
+
+    >(%s.s s) %x.x %y.y
+    Result: %y.y
+
 ### Define Function
 
 Use KEYWORD `define` to define funtions:
