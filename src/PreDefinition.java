@@ -9,10 +9,10 @@ public class PreDefinition {
         definitions.add("define false = %x y.y");
         definitions.add("define if = %p x y. p x y");
 
-        // pairs
-        definitions.add("define pair = %x y f.f x y");
-        definitions.add("define fst = %p.p true");
-        definitions.add("define snd = %p.p false");
+        // cons
+        definitions.add("define cons = %x y f.f x y");
+        definitions.add("define car = %p.p true");
+        definitions.add("define cdr = %p.p false");
 
         // number
         definitions.add("define suc = %n f x.n f (f x)");
@@ -30,26 +30,22 @@ public class PreDefinition {
         definitions.add("define add = %m n f x.m f (n f x)");
         definitions.add("define mult = %m n f.m f (n f)");
         definitions.add("define expt = %m n f x.n m f x");
-        definitions.add("define prefn = %f p.pair (f (fst p)) (fst p)");
-        definitions.add("define pre = %n f x.snd (n (prefn f) (pair x x))");
+        definitions.add("define prefn = %f p.cons (f (car p)) (car p)");
+        definitions.add("define pre = %n f x.cdr (n (prefn f) (cons x x))");
         definitions.add("define sub = %m n.n pre m");
 
         // table
         definitions.add("define nil = %z.z");
-        definitions.add("define cons = %x y.pair false (pair x y)");
-        definitions.add("define null = fst");
-        definitions.add("define hd = %z.fst (snd z)");
-        definitions.add("define tl = %z.snd (snd z)");
+        definitions.add("define list = %x y.cons false (cons x y)");
+        definitions.add("define null = car");
+        definitions.add("define head = %z.car (cdr z)");
+        definitions.add("define tail = %z.cdr (cdr z)");
 
-        // recursion of CALL BY NAME
+        // recursion
         definitions.add("define Y = %f.(%x.f (x x)) (%x.f (x x))");
         definitions.add("define fact = Y (%g n. if (iszero n) 1 (mult n (g (pre n))))");
-        definitions.add("define append = Y(%g z w.if (null z) w (cons (hd z) (g (tl z) w)))");
-        definitions.add("define inflist = Y(%z.cons MORE z)");
-
-        // recursion of CALL BY VALUE
-        definitions.add("define YV = %f.(%x.f (%y.x x y)) (%x.f (%y.x x y))");
-        definitions.add("define factV = YV (%g n.(if (iszero n) (%y.1) (%y.mult n (g (pre n)))) y)");
+        definitions.add("define append = Y(%g z w.if (null z) w (list (head z) (g (tail z) w)))");
+        // definitions.add("define inflist = Y(%z.list MORE z)");
 
         return definitions.toArray(new String[definitions.size()]);
     }

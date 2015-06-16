@@ -33,7 +33,7 @@ public class LambdaInterp {
         } else {
             Expr expr = createExpr(input);
             expr = interpExpr(expr);
-            Display.print(expr);
+            System.out.println("Result: " + expr);
             return true;
         }
     }

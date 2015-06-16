@@ -6,6 +6,7 @@ abstract class Expr {
 
     public Expr lambda;
     public Expr var;
+
 }
 
 class Lambda extends Expr {
@@ -20,6 +21,16 @@ class Lambda extends Expr {
         this.arg  = new Var(arg.value);
         this.body = body;
     }
+
+    public String toString() {
+        String argString;
+        if (this.arg == null) {
+            argString = "";
+        } else {
+            argString = this.arg.toString();
+        }
+        return "(" + Keyword.LAMBDA_SIGN + argString + Keyword.LAMBDA_DOT + this.body + ")";
+    }
 }
 
 class Apply extends Expr {
@@ -27,10 +38,18 @@ class Apply extends Expr {
         this.lambda = lambda;
         this.var = var;
     }
+
+    public String toString() {
+        return "(" + this.lambda + " " + this.var + ")";
+    }
 }
 
 class Var extends Expr {
     public Var(String value) {
         this.value = value;
+    }
+
+    public String toString() {
+        return this.value;
     }
 }

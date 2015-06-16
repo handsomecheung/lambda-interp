@@ -31,6 +31,15 @@ class ArgsS extends ExprS {
         this.arg = new VarS(arg.value);
         this.others = new ArgsS(others.arg, others.others);
     }
+
+
+    public String toString() {
+        String s = this.arg.toString();
+        if (this.others != null) {
+            s = s + " " + this.others;
+        }
+        return s;
+    }
 }
 
 class LambdaS extends ExprS {
@@ -53,6 +62,10 @@ class LambdaS extends ExprS {
         this.args = _args;
         this.body = body;
     }
+
+    public String toString() {
+        return "(" + Keyword.LAMBDA_SIGN + this.args + Keyword.LAMBDA_DOT + this.body + ")";
+    }
 }
 
 class ApplyS extends ExprS {
@@ -60,11 +73,19 @@ class ApplyS extends ExprS {
         this.lambda = lambda;
         this.var = var;
     }
+
+    public String toString() {
+        return "(" + this.lambda + " " + this.var + ")";
+    }
 }
 
 class VarS extends ExprS {
     public VarS(String value) {
         this.value = value;
+    }
+
+    public String toString() {
+        return this.value;
     }
 }
 
