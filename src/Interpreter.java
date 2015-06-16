@@ -205,7 +205,7 @@ public class Interpreter {
             if (boundVars.contains(expr.value)) {
                 return expr;
             } else {
-                return env.lookupGently(expr.value).expr;
+                return env.lookup(expr.value).expr;
             }
         } else if (expr instanceof Apply) {
             return new Apply(extendExpr(expr.lambda, env, boundVars), extendExpr(expr.var, env, boundVars));
