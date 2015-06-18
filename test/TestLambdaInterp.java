@@ -1,8 +1,6 @@
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,8 +13,9 @@ public class TestLambdaInterp{
         ExprS exprS = Parser.parser(tokens);
         Expr expr = Desugar.desugar(exprS);
         Expr newExpr = interp.interp(expr);
-        Expr rExpr = interp.reduceExpr(newExpr, new Env());
-        return rExpr.toString();
+        // Expr rExpr = interp.reduceExpr(newExpr, new Env());
+        //return rExpr.toString();
+        return newExpr.toString();
     }
 
     @Test public void testEvaluation(){
@@ -51,13 +50,13 @@ public class TestLambdaInterp{
         assertEquals("(%x.(%y.y))", evaluate("iszero (add 1 1)"));
         assertEquals("(%x.(%y.y))", evaluate("iszero (add 9 9)"));
 
-        // assertEquals("(%x.(%y.x))", evaluate("iszero (pre 1)"));
-        // assertEquals("(%x.(%y.y))", evaluate("iszero (pre 2)"));
+        assertEquals("(%x.(%y.x))", evaluate("iszero (pre 1)"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (pre 2)"));
 
-        // assertEquals("(%x.(%y.x))", evaluate("iszero (sub 9 9)"));
-        // assertEquals("(%x.(%y.y))", evaluate("iszero (sub 9 6)"));
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 9 9)"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 9 6)"));
 
-        assertEquals("(%f.(%x.(f x)))", evaluate("car (cons 1 2)"));
-        assertEquals("(%f.(%x.(f (f x))))", evaluate("cdr (cons 1 2)"));
+        // assertEquals("(%f.(%x.(f x)))", evaluate("car (cons 1 2)"));
+        // assertEquals("(%f.(%x.(f (f x))))", evaluate("cdr (cons 1 2)"));
     }
 }
