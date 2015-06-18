@@ -188,24 +188,26 @@ public class Interpreter {
             Env newEnv = cc.env.detach(c.env).attach(env);
             return new Closure(cc.expr, newEnv);
         } else {
-            Expr newExpr = extendExpr(expr, env, new HashSet());
+            Expr newExpr = extendExpr(expr, env, new HashSet<String>());
             return new Closure(newExpr, env);
         }
     }
 
-
-    private Expr extendExpr(Expr expr, Env env, HashSet boundVars) {
+    private Expr extendExpr(Expr expr, Env env, HashSet<String> boundVars) {
         if (expr instanceof Lambda) {
             if (expr.arg != null) {
-                boundVars.add(expr.arg.value);
-                return new Lambda(expr.arg, extendExpr(expr.body, env, boundVars));
+                HashSet<String> newBoundVars = new HashSet<String>();
+                for (String v: boundVars) {newBoundVars.add(v);}
+                newBoundVars.add(expr.arg.value);
+                return new Lambda(expr.arg, extendExpr(expr.body, env, newBoundVars));
             }
             return new Lambda(extendExpr(expr.body, env, boundVars));
         } else if (expr instanceof Var) {
             if (boundVars.contains(expr.value)) {
                 return expr;
             } else {
-                return env.lookup(expr.value).expr;
+                Closure c = env.lookup(expr.value);
+                return extendExpr(c.expr, c.env, new HashSet<String>());
             }
         } else if (expr instanceof Apply) {
             return new Apply(extendExpr(expr.lambda, env, boundVars), extendExpr(expr.var, env, boundVars));
