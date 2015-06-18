@@ -217,26 +217,26 @@ public class Interpreter {
     }
 
 
-    public Expr reduceExpr(Expr expr, Env env) {
-        if (expr instanceof Lambda) {
-            if (expr.arg == null) {
-                return new Lambda(reduceExpr(expr.body, env));
-            } else {
-                return new Lambda(expr.arg, reduceExpr(expr.body, new Env(expr.arg.value, expr.arg, env)));
-            }
-        } else if (expr instanceof Apply) {
-            Expr lam = reduceExpr(expr.lambda, env);
-            if (lam instanceof Lambda) {
-                env = new Env(lam.arg.value, reduceExpr(expr.var, env), env);
-                return reduceExpr(lam.body, env);
-            } else {
-                return new Apply(lam, reduceExpr(expr.var, env));
-            }
-        } else if (expr instanceof Var) {
-            Closure c = env.lookup(expr.value);
-            return c.expr;
-        } else {
-            throw new RuntimeException("invalid expr: " + expr);
-        }
-     }
+    // public Expr reduceExpr(Expr expr, Env env) {
+    //     if (expr instanceof Lambda) {
+    //         return new Lambda(expr.arg, reduceExpr(expr.body, env));
+    //     } else if (expr instanceof Apply) {
+    //         Expr lam = reduceExpr(expr.lambda, env);
+    //         if (lam instanceof Lambda) {
+    //             env = new Env(lam.arg.value, reduceExpr(expr.var, env), env);
+    //             return reduceExpr(lam.body, env);
+    //         } else {
+    //             return new Apply(lam, reduceExpr(expr.var, env));
+    //         }
+    //     } else if (expr instanceof Var) {
+    //         Closure c = env.lookupGently(expr.value);
+    //         if (c != null) {
+    //             return c.expr;
+    //         } else {
+    //             return expr;
+    //         }
+    //     } else {
+    //         throw new RuntimeException("invalid expr: " + expr);
+    //     }
+    //  }
 }
