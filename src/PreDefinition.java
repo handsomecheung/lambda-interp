@@ -28,7 +28,7 @@ public class PreDefinition {
         definitions.add("define 8 = suc 7");
         definitions.add("define 9 = suc 8");
         definitions.add("define add = %m n f x.m f (n f x)");
-        definitions.add("define mult = %m n f.m f (n f)");
+        definitions.add("define mult = %m n f.m (n f)");
         definitions.add("define expt = %m n f x.n m f x");
         definitions.add("define prefn = %f p.cons (f (car p)) (car p)");
         definitions.add("define pre = %n f x.cdr (n (prefn f) (cons x x))");
