@@ -158,7 +158,7 @@ public class Interpreter {
     public Interpreter(){}
 
     public void addDefinition(String key, Expr expr) {
-        this.theEnv.add(key, interp(expr));
+        this.theEnv = new Env(key, new Closure(expr, this.theEnv), this.theEnv);
     }
 
     public Expr interp(Expr expr) {
