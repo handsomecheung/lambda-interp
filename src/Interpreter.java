@@ -170,7 +170,6 @@ public class Interpreter {
         if (expr instanceof Apply) {
             Closure lambdaC = interp(expr.lambda, env);
             Expr lambda = lambdaC.expr;
-            env = lambdaC.env;
             if (lambda.arg != null) {
                 if (expr.var instanceof Apply) {
                     env = new Env(lambda.arg.value, expr.var, env);
