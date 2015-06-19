@@ -8,13 +8,19 @@ public class TestLambdaInterp{
     private static final Pattern DEFINITION_SYNTAX = Pattern.compile("define (.+) = (.+)$");
     private final static Interpreter interp = new Interpreter();
 
+    public void define(String defStr) {
+        Matcher m = DEFINITION_SYNTAX.matcher(defStr);
+        m.matches();
+        String var = m.group(1);
+        Expr def = Desugar.desugar(Parser.parser(Token.scan(m.group(2))));
+        interp.addDefinition(var, def);
+    }
+
     public String evaluate(String s) {
         Token[] tokens = Token.scan(s);
         ExprS exprS = Parser.parser(tokens);
         Expr expr = Desugar.desugar(exprS);
         Expr newExpr = interp.interp(expr);
-        // Expr rExpr = interp.reduceExpr(newExpr, new Env());
-        //return rExpr.toString();
         return newExpr.toString();
     }
 
@@ -27,16 +33,14 @@ public class TestLambdaInterp{
         assertEquals("(%x.(%y.x))", evaluate("(%n.n (%x.%x y.y) %x y.x) ((%m n f x.m f (n f x)) (%f x.x) (%f x.x))"));
         assertEquals("(%x.(%y.y))", evaluate("(%n.n (%x.%x y.y) %x y.x) ((%m n f x.m f (n f x)) (%f x.x) (%f x.f x))"));
         assertEquals("(%x.(%y.y))", evaluate("(%n.n (%x.%x y.y) %x y.x) ((%m n f x.m f (n f x)) (%f x.f x) (%f x.f x))"));
+
+        assertEquals("(%x.(x (%y.y)))", evaluate("%x.x %y.y"));
+        assertEquals("(%x.(%y.(%z.((x y) z))))", evaluate("%x y z.x y z"));
+        assertEquals("(%y.y)", evaluate("(%s.s s) %x.x %y.y"));
     }
 
     @Test public void testDefinition(){
-        for(String defStr: PreDefinition.all()){
-            Matcher m = DEFINITION_SYNTAX.matcher(defStr);
-            m.matches();
-            String var = m.group(1);
-            Expr def = Desugar.desugar(Parser.parser(Token.scan(m.group(2))));
-            interp.addDefinition(var, def);
-        }
+        for(String defStr: PreDefinition.all()){define(defStr);}
 
         assertEquals("(%p.(%x.(%y.((p x) y))))", evaluate("if"));
         assertEquals("(%x.(%y.x))", evaluate("true"));
@@ -67,7 +71,16 @@ public class TestLambdaInterp{
         assertEquals("(%x.(%y.y))", evaluate("iszero (sub 7 (fact 3))"));
         assertEquals("(%x.(%y.x))", evaluate("iszero (sub 6 (fact 3))"));
 
-        // assertEquals("(%f.(%x.(f x)))", evaluate("car (cons 1 2)"));
-        // assertEquals("(%f.(%x.(f (f x))))", evaluate("cdr (cons 1 2)"));
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 1 (car (cons 1 2)))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 2 (car (cons 1 2)))"));
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 2 (cdr (cons 1 2)))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 3 (cdr (cons 1 2)))"));
+
+        define("define a = %a.a");
+        define("define b = %b.b");
+        assertEquals("(%a.a)", evaluate("a"));
+        assertEquals("(%b.b)", evaluate("b"));
+        assertEquals("(%a.a)", evaluate("if true a b"));
+        assertEquals("(%b.b)", evaluate("if false a b"));
     }
 }
