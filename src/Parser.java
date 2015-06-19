@@ -1,10 +1,8 @@
 import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 
 class IllSyntaxException extends LambdaInterpException{
-    public IllSyntaxException(){
+	private static final long serialVersionUID = 9053892733742415984L;
+	public IllSyntaxException(){
         super();
     }
     public IllSyntaxException(String msg){

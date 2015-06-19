@@ -2,7 +2,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 class IllInterpException extends LambdaInterpException{
-    public IllInterpException(){
+	private static final long serialVersionUID = -8674501232897615142L;
+	public IllInterpException(){
         super();
     }
     public IllInterpException(String msg){

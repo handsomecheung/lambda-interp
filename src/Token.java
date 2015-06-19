@@ -5,7 +5,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 class IllTokenException extends LambdaInterpException{
-    public IllTokenException(){
+	private static final long serialVersionUID = 1415981412922061572L;
+	public IllTokenException(){
         super();
     }
     public IllTokenException(String msg){
