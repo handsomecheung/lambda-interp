@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 public class TestLambdaInterp{
     private static final Pattern DEFINITION_SYNTAX = Pattern.compile("define (.+) = (.+)$");
     private final static Interpreter interp = new Interpreter();
-    
+
     public String evaluate(String s) {
         Token[] tokens = Token.scan(s);
         ExprS exprS = Parser.parser(tokens);
@@ -55,6 +55,17 @@ public class TestLambdaInterp{
 
         assertEquals("(%x.(%y.x))", evaluate("iszero (sub 9 9)"));
         assertEquals("(%x.(%y.y))", evaluate("iszero (sub 9 6)"));
+
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 2 (mult 1 2))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 3 (mult 1 2))"));
+
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 2 (mult 2 1))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 3 (mult 2 1))"));
+
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 9 (fact 3))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 8 (fact 3))"));
+        assertEquals("(%x.(%y.y))", evaluate("iszero (sub 7 (fact 3))"));
+        assertEquals("(%x.(%y.x))", evaluate("iszero (sub 6 (fact 3))"));
 
         // assertEquals("(%f.(%x.(f x)))", evaluate("car (cons 1 2)"));
         // assertEquals("(%f.(%x.(f (f x))))", evaluate("cdr (cons 1 2)"));
