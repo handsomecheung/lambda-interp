@@ -32,6 +32,7 @@ public class LambdaInterp {
         } else {
             Expr expr = createExpr(input);
             expr = interpExpr(expr);
+            expr = reduceExpr(expr);
             System.out.println("Result: " + expr);
             return true;
         }
@@ -46,6 +47,10 @@ public class LambdaInterp {
 
     private static Expr interpExpr(Expr expr) {
         return interp.interp(expr);
+    }
+
+    private static Expr reduceExpr(Expr expr) {
+        return interp.reduceExpr(expr, new Env());
     }
 
     private static boolean isDefinition(String str) {

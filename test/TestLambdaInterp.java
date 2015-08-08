@@ -112,5 +112,6 @@ public class TestLambdaInterp{
 
         assertEquals("(%f.(%x.(f (f (f x)))))", evalAndReduce("car (cons 3 2)"));
         assertEquals("(%f.(%x.(f (f x))))", evalAndReduce("cdr (cons 3 2)"));
+        assertEquals("(%x.((%b.(b b)) (%b.(b b))))", evalAndReduce("(%x.((%b.(b b)) (%b.(b b))))"));       
     }
 }

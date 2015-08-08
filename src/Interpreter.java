@@ -11,6 +11,16 @@ class IllInterpException extends LambdaInterpException{
     }
 }
 
+class UnlimitedReduceException  extends RuntimeException {
+	private static final long serialVersionUID = 8958282081060521465L;
+	public UnlimitedReduceException(){
+        super();
+    }
+    public UnlimitedReduceException(String msg){
+        super(msg);
+    }
+}
+
 class Store {
     private HashMap<Integer, Closure> storage = new HashMap<Integer, Closure>();
 
@@ -226,21 +236,34 @@ public class Interpreter {
     }
 
     public Expr reduceExpr(Expr expr, Env env) {
+        try {
+            Expr rExpr = reduceExpr(expr, env, 1);
+            return rExpr;
+        } catch (UnlimitedReduceException e) {
+            System.out.println(e.getMessage());
+            return expr;
+        }
+    }
+
+    public Expr reduceExpr(Expr expr, Env env, int count) {
+        if (count == 1000) {
+            throw new UnlimitedReduceException("Maybe the expr can not be reduced");
+        }
         if (expr instanceof Lambda) {
             String shadowName = getAvailableName(expr.arg.value, env);
             env = new Env(expr.arg.value, new VarR(shadowName), env);
             if (! shadowName.equals(expr.arg.value)) {
                 env = new Env(shadowName, new VarR("placeHolder"), env);
             }
-            expr = new Lambda(new Var(shadowName), reduceExpr(expr.body, env));
+            expr = new Lambda(new Var(shadowName), reduceExpr(expr.body, env, count + 1));
             return replaceVarR(expr, new Env());
         } else if (expr instanceof Apply) {
-            Expr lam = reduceExpr(expr.lambda, env);
+            Expr lam = reduceExpr(expr.lambda, env, count + 1);
             if (lam instanceof Lambda) {
-                env = new Env(lam.arg.value, reduceExpr(expr.var, env), env);
-                return reduceExpr(lam.body, env);
+                env = new Env(lam.arg.value, reduceExpr(expr.var, env, count + 1), env);
+                return reduceExpr(lam.body, env, count + 1);
             } else {
-                return new Apply(lam, reduceExpr(expr.var, env));
+                return new Apply(lam, reduceExpr(expr.var, env, count + 1));
             }
         } else if (expr instanceof Var) {
             Closure c = env.lookup(expr.value);
