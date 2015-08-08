@@ -2,8 +2,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 class IllInterpException extends LambdaInterpException{
-	private static final long serialVersionUID = -8674501232897615142L;
-	public IllInterpException(){
+    private static final long serialVersionUID = -8674501232897615142L;
+    public IllInterpException(){
         super();
     }
     public IllInterpException(String msg){
@@ -211,6 +211,62 @@ public class Interpreter {
             }
         } else if (expr instanceof Apply) {
             return new Apply(extendExpr(expr.lambda, env, boundVars), extendExpr(expr.var, env, boundVars));
+        } else {
+            throw new RuntimeException("invalid expr: " + expr);
+        }
+    }
+
+    private String getAvailableName(String name, Env env) {
+        Closure isExist = env.lookupGently(name);
+        if (isExist == null) {
+            return name;
+        } else {
+            return getAvailableName(MyStr.addLastNumber(name), env);
+        }
+    }
+
+    public Expr reduceExpr(Expr expr, Env env) {
+        if (expr instanceof Lambda) {
+            String shadowName = getAvailableName(expr.arg.value, env);
+            env = new Env(expr.arg.value, new VarR(shadowName), env);
+            if (! shadowName.equals(expr.arg.value)) {
+                env = new Env(shadowName, new VarR("placeHolder"), env);
+            }
+            expr = new Lambda(new Var(shadowName), reduceExpr(expr.body, env));
+            return replaceVarR(expr, new Env());
+        } else if (expr instanceof Apply) {
+            Expr lam = reduceExpr(expr.lambda, env);
+            if (lam instanceof Lambda) {
+                env = new Env(lam.arg.value, reduceExpr(expr.var, env), env);
+                return reduceExpr(lam.body, env);
+            } else {
+                return new Apply(lam, reduceExpr(expr.var, env));
+            }
+        } else if (expr instanceof Var) {
+            Closure c = env.lookup(expr.value);
+            return c.expr;
+        } else if (expr instanceof VarR) {
+            return expr;
+        } else {
+            throw new RuntimeException("invalid expr: " + expr);
+        }
+    }
+
+    public Expr replaceVarR(Expr expr, Env env) {
+        if (expr instanceof Lambda) {
+            env = new Env(expr.arg.value, new Var(expr.arg.value), env);
+            return new Lambda(expr.arg, replaceVarR(expr.body, env));
+        } else if (expr instanceof Apply) {
+            return new Apply(replaceVarR(expr.lambda, env), replaceVarR(expr.var, env));
+        } else if (expr instanceof Var) {
+            return expr;
+        } else if (expr instanceof VarR) {
+            Closure c = env.lookupGently(expr.value);
+            if (c == null) {
+                return expr;
+            } else {
+                return new Var(c.expr.value);
+            }
         } else {
             throw new RuntimeException("invalid expr: " + expr);
         }

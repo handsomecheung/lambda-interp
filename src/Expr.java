@@ -53,3 +53,14 @@ class Var extends Expr {
         return this.value;
     }
 }
+
+// for reduceExpr
+class VarR extends Expr {
+    public VarR(String value) {
+        this.value = value;
+    }
+
+    public String toString() {
+        return this.value;
+    }
+}

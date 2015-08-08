@@ -44,4 +44,18 @@ class MyStr {
     public static String[] splitByP(String str, Predicate<String> p) {
         return splitByP(str, p, "");
     }
+
+    public static String addLastNumber(String str) {
+        Pattern pattern = Pattern.compile("^(.*[^0-9]+)([0-9]*)$");
+        Matcher matcher = pattern.matcher(str);
+        int baseInt;
+
+        matcher.find();
+        if (matcher.group(2).isEmpty()) {
+            baseInt = 0;
+        } else {
+            baseInt = Integer.parseInt(matcher.group(2));
+        }
+        return matcher.group(1) + Integer.toString(baseInt + 1);
+    }
 }

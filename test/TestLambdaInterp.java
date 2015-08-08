@@ -16,12 +16,19 @@ public class TestLambdaInterp{
         interp.addDefinition(var, def);
     }
 
-    public String evaluate(String s) {
+    public Expr doEvaluate(String s) {
         Token[] tokens = Token.scan(s);
         ExprS exprS = Parser.parser(tokens);
         Expr expr = Desugar.desugar(exprS);
-        Expr newExpr = interp.interp(expr);
-        return newExpr.toString();
+        return interp.interp(expr);
+    }
+
+    public String evaluate(String s) {
+        return doEvaluate(s).toString();
+    }
+
+    public String evalAndReduce(String s) {
+        return interp.reduceExpr(doEvaluate(s), new Env()).toString();
     }
 
     @Test public void testEvaluation(){
@@ -82,5 +89,28 @@ public class TestLambdaInterp{
         assertEquals("(%b.b)", evaluate("b"));
         assertEquals("(%a.a)", evaluate("if true a b"));
         assertEquals("(%b.b)", evaluate("if false a b"));
+    }
+
+    @Test public void testReduce(){
+        for(String defStr: PreDefinition.all()){define(defStr);}
+        assertEquals("(%f.(%x.x))", evalAndReduce("sub 1 1"));
+        assertEquals("(%f.(%x.x))", evalAndReduce("sub 2 2"));
+        assertEquals("(%f.(%x.x))", evalAndReduce("sub 9 9"));
+        assertEquals("(%f.(%x.(f x)))", evalAndReduce("sub 2 1"));
+        assertEquals("(%f.(%x.(f (f x))))", evalAndReduce("sub 3 1"));
+        assertEquals("(%f.(%x.(f (f (f (f (f (f (f (f x))))))))))", evalAndReduce("sub 9 1"));
+        assertEquals("(%f.(%x.(f (f (f (f x))))))", evalAndReduce("sub 7 3"));
+        assertEquals("(%f.(%x.(f (f (f (f (f x)))))))", evalAndReduce("pre 6"));
+        assertEquals("(%f.(%x.(f (f (f (f x))))))", evalAndReduce("pre (pre 6)"));
+
+        assertEquals("(%f.(%x.(f (f (f x)))))", evalAndReduce("add 2 1"));
+        assertEquals("(%f.(%x.(f (f (f (f (f (f (f (f (f (f (f (f (f (f (f (f (f x)))))))))))))))))))", evalAndReduce("add 8 9"));
+
+        assertEquals("(%f.(%x.(f (f x))))", evalAndReduce("mult 2 1"));
+        assertEquals("(%f.(%x.(f (f (f (f (f (f x))))))))", evalAndReduce("mult 2 3"));
+        assertEquals("(%f.(%x.(f (f (f (f (f (f (f (f (f (f (f (f x))))))))))))))", evalAndReduce("mult 4 3"));
+
+        assertEquals("(%f.(%x.(f (f (f x)))))", evalAndReduce("car (cons 3 2)"));
+        assertEquals("(%f.(%x.(f (f x))))", evalAndReduce("cdr (cons 3 2)"));
     }
 }
