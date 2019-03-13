@@ -1,297 +1,302 @@
-import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashSet;
-
-class IllInterpException extends LambdaInterpException{
-    private static final long serialVersionUID = -8674501232897615142L;
-    public IllInterpException(){
-        super();
-    }
-    public IllInterpException(String msg){
-        super(msg);
-    }
-}
-
-class UnlimitedReduceException  extends RuntimeException {
-	private static final long serialVersionUID = 8958282081060521465L;
-	public UnlimitedReduceException(){
-        super();
-    }
-    public UnlimitedReduceException(String msg){
-        super(msg);
-    }
-}
-
-class Store {
-    private HashMap<Integer, Closure> storage = new HashMap<Integer, Closure>();
-
-    public Store() {}
-
-    public Closure fetch(Integer location) {
-        if (this.storage.containsKey(location)) {
-            return this.storage.get(location);
-        } else {
-            throw new RuntimeException("can not find location: " + location);
-        }
-    }
-
-    public void set(Integer location, Closure c) {
-        this.storage.put(location, c);
-    }
-}
-
-class Env {
-    private Env outer = null;
-    private HashMap<String, Integer> env = new HashMap<String, Integer>();
-
-    private static Integer currentLocation = 1;
-    private static Integer makeLocation() {
-        currentLocation = currentLocation + 1;
-        return currentLocation;
-    }
-
-    private static Store store = new Store();
-
-    public Env() {}
-
-    public Env(String key, Expr expr, Env outer) {
-        Integer location = makeLocation();
-        this.env.put(key, location);
-        this.outer = outer;
-        Env.store.set(location, new Closure(expr, outer));
-    }
-
-    public Env(String key, Closure c, Env outer) {
-        Integer location = makeLocation();
-        this.env.put(key, location);
-        this.outer = outer;
-        Env.store.set(location, c);
-    }
-
-    public Env(HashMap<String, Integer> env) {
-        this.env = env;
-    }
-
-    public void add(String key, Expr expr) {
-        Integer location = makeLocation();
-        this.env.put(key, location);
-        Env.store.set(location, new Closure(expr, this));
-    }
-
-    public HashMap<String, Integer> getEnv() {
-        return this.env;
-    }
-
-    public Env getOuter() {
-        return this.outer;
-    }
-
-
-    public Closure lookupGently(String key) {
-        HashMap<String, Integer> e = find(key);
-        if (e == null) {
-            return null;
-        } else {
-            return Env.store.fetch(e.get(key));
-        }
-    }
-
-    public Closure lookup(String key) {
-        Closure r = lookupGently(key);
-        if (r == null) {
-            throw new IllInterpException("can not find symbol: " + key);
-        } else {
-            return r;
-        }
-    }
-
-    private HashMap<String, Integer> find(String key) {
-        if (this.env.containsKey(key)) {
-            return this.env;
-        } else if (outer != null) {
-            return this.outer.find(key);
-        } else {
-            return null;
-        }
-    }
-
-    public Env detach(Env otherEnv) {
-        Env newEnv = new Env(this.env);
-        if (this == otherEnv) {
-            return new Env();
-        } else if (this.outer != otherEnv) {
-            if (this.outer == null) {
-                throw new RuntimeException("can not detach");
-            } else {
-                return newEnv.attach(this.outer.detach(otherEnv));
-            }
-        } else {
-            return newEnv;
-        }
-    }
-
-    public Env attach(Env otherEnv) {
-        if (this.outer == null) {
-            this.outer = otherEnv;
-            return this;
-        } else {
-            this.outer.attach(otherEnv);
-            return this;
-        }
-    }
-
-    public String toString() {
-        String s = "";
-        for (HashMap.Entry<String, Integer> entry: this.env.entrySet()) {
-            Closure c = Env.store.fetch(entry.getValue());
-            s = s + entry.getKey() + ": " + c.expr + ",";
-        }
-
-        if (this.outer != null) {
-            s = s + "\n" + this.outer;
-        }
-        return s;
-    }
-}
-
-class Closure {
-    public Expr expr;
-    public Env env;
-
-    public Closure(Expr expr, Env env) {
-        this.expr = expr;
-        this.env  = env;
-    }
-}
+import java.util.Collections;
 
 public class Interpreter {
-    private Env theEnv = new Env();
+    private Env env = new Env();
+    private HashSet<String> allVars = new HashSet<String>();
+    private HashSet<String> infiniteApplies = new HashSet<String>();
+
+    private boolean debug = false;
+    private boolean silence = true;
 
     public Interpreter(){}
 
     public void addDefinition(String key, Expr expr) {
-        this.theEnv = new Env(key, new Closure(expr, this.theEnv), this.theEnv);
+        boolean o = this.silence;
+        this.silence = true;
+        Expr newExpr = interp(expr);
+        this.env = this.env.add(key, newExpr);
+        this.silence = o;
+    }
+
+    public void enableDebug() {
+        this.debug = true;
+    }
+
+    public void disableSilence() {
+        this.silence = false;
     }
 
     public Expr interp(Expr expr) {
-        Closure c = interp(expr, this.theEnv);
-        return c.expr;
+        this.allVars = new HashSet<String>();
+        this.infiniteApplies = new HashSet<String>();
+
+        Expr result;
+        result = interp(expr, this.env, new HashSet<String>(), false);
+        result = interp(result, this.env, new HashSet<String>(), true);
+        result = exprSimplify(result, this.env, new HashSet<String>());
+
+        return result;
     }
 
-    private Closure interp(Expr expr, Env env) {
-        if (expr instanceof Apply) {
-            Closure lambdaC = interp(expr.lambda, env);
-            Expr lambda = lambdaC.expr;
-            if (lambda.arg != null) {
-                if (expr.var instanceof Apply) {
-                    env = new Env(lambda.arg.value, expr.var, env);
-                } else if (expr.var instanceof Var) {
-                    Closure c = env.lookup(expr.var.value);
-                    env = new Env(lambda.arg.value, c, env);
-                } else {
-                    env = new Env(lambda.arg.value, expr.var, env);
+    private Expr interp(Expr expr, Env env, HashSet<String> allApplies, boolean continual) {
+        interpDebugEntry(expr, env, allApplies, continual);
+
+        Expr result;
+
+        if (expr instanceof ExprVar) {
+            result = env.lookup(expr.value);
+            if (!(result instanceof ExprVar)) {
+                result = interp(result, env, allApplies, continual);
+            }
+        } else if (expr instanceof ExprLambda) {
+            result = extendExprLambda(expr, env, allApplies, continual);
+        } else if (expr instanceof ExprApply) {
+            result = new ExprApply(interp(expr.rator, env, allApplies, continual),
+                                   extendExpr(expr.rand, env, allApplies, false));
+            if (!isInfinite(result)) {
+                if (result.rator instanceof ExprLambda) {
+                    HashSet<String> newAllApplies = addApply(allApplies, result);
+                    if (newAllApplies.size() == allApplies.size()) {
+                        result = extendExprOnce(result, env, allApplies);
+                        if (!this.silence) {
+                            Expr hint = exprSimplify(result, new Env(), new HashSet<String>());
+                            System.out.printf("Warning: infinite loop happens in expression `%s`\n\n",
+                                              hint);
+                        }
+                    } else {
+                        Env newEnv = env.add(result.rator.arg.value, result.rand);
+                        result = interp(result.rator.body, newEnv, newAllApplies, continual);
+                    }
                 }
             }
-            return interp(lambda.body, env);
-        } else if (expr instanceof Var) {
-            Closure c = env.lookup(expr.value);
-            Closure cc = interp(c.expr, c.env);
-            Env newEnv = cc.env.detach(c.env).attach(env);
-            return new Closure(cc.expr, newEnv);
         } else {
-            Expr newExpr = extendExpr(expr, env, new HashSet<String>());
-            return new Closure(newExpr, env);
+            throw invalidExpr(expr);
+        }
+
+        interpDebugExit(expr, env, allApplies, continual, result);
+
+        return result;
+    }
+
+    private void interpDebugEntry(Expr expr, Env env,
+                                  HashSet<String> allApplies, boolean continual) {
+
+        if (this.debug) {
+            System.out.println();
+            System.out.println("==========================================================");
+            System.out.println("-------------------- interp entry ------------------------");
+            System.out.printf("interp expr, %s: %s\n\n", expr.getClass(), expr);
+            System.out.printf("interp continual: %s\n\n", continual);
+            System.out.printf("interp all applies: %s\n\n", allApplies);
+            System.out.printf("interp allVars: %s\n\n", this.allVars);
+            System.out.printf("interp env: %s\n\n", env);
         }
     }
 
-    private Expr extendExpr(Expr expr, Env env, HashSet<String> boundVars) {
-        if (expr instanceof Lambda) {
-            if (expr.arg != null) {
-                HashSet<String> newBoundVars = new HashSet<String>();
-                for (String v: boundVars) {newBoundVars.add(v);}
-                newBoundVars.add(expr.arg.value);
-                return new Lambda(expr.arg, extendExpr(expr.body, env, newBoundVars));
+    private void interpDebugExit(Expr expr, Env env,
+                                 HashSet<String> allApplies, boolean continual, Expr result) {
+        if (this.debug) {
+            System.out.printf("interp expr, %s: %s\n\n", expr.getClass(), expr);
+            System.out.printf("interp continual: %s\n\n", continual);
+            System.out.printf("interp result, %s: %s\n\n", result.getClass(), result);
+            System.out.printf("interp all applies: %s\n\n", allApplies);
+            System.out.printf("interp env: %s\n\n", env);
+            System.out.println("-------------------- interp exit -------------------------");
+            System.out.println("==========================================================");
+            System.out.println();
+        }
+    }
+
+    private Expr extendExprLambda(Expr expr, Env env, HashSet<String> allApplies, boolean continual) {
+        Env newEnv = env;
+        ExprVar originalArg = expr.arg;
+        ExprVar newArg = expr.arg;
+        if (newArg != null) {
+            newArg = tryRenameVar(newArg, this.allVars);
+            newEnv = newEnv.add(originalArg.value, newArg);
+            if (!originalArg.value.equals(newArg.value)) {
+                newEnv = newEnv.add(newArg.value, newArg);
             }
-            return new Lambda(extendExpr(expr.body, env, boundVars));
-        } else if (expr instanceof Var) {
-            if (boundVars.contains(expr.value)) {
-                return expr;
+
+            this.allVars.add(newArg.value);
+        }
+
+        return new ExprLambda(newArg, extendExpr(expr.body, newEnv, allApplies, continual));
+    }
+
+    private Expr extendExpr(Expr expr, Env env, HashSet<String> allApplies, boolean continual) {
+        extendExprDebugEntry(expr, env, allApplies, continual);
+
+        Expr result;
+
+        if (expr instanceof ExprVar) {
+            if (continual) {
+                result = interp(expr, env, allApplies, continual);
             } else {
-                Closure c = env.lookup(expr.value);
-                return extendExpr(c.expr, c.env, new HashSet<String>());
+                result = env.lookup(expr.value);
             }
-        } else if (expr instanceof Apply) {
-            return new Apply(extendExpr(expr.lambda, env, boundVars), extendExpr(expr.var, env, boundVars));
-        } else {
-            throw new RuntimeException("invalid expr: " + expr);
-        }
-    }
-
-    private String getAvailableName(String name, Env env) {
-        Closure isExist = env.lookupGently(name);
-        if (isExist == null) {
-            return name;
-        } else {
-            return getAvailableName(MyStr.addLastNumber(name), env);
-        }
-    }
-
-    public Expr reduceExpr(Expr expr, Env env) {
-        try {
-            Expr rExpr = reduceExpr(expr, env, 1);
-            return rExpr;
-        } catch (UnlimitedReduceException e) {
-            System.out.println(e.getMessage());
-            return expr;
-        }
-    }
-
-    public Expr reduceExpr(Expr expr, Env env, int count) {
-        if (count == 1000) {
-            throw new UnlimitedReduceException("Maybe the expr can not be reduced");
-        }
-        if (expr instanceof Lambda) {
-            String shadowName = getAvailableName(expr.arg.value, env);
-            env = new Env(expr.arg.value, new VarR(shadowName), env);
-            if (! shadowName.equals(expr.arg.value)) {
-                env = new Env(shadowName, new VarR("placeHolder"), env);
+        } else if (expr instanceof ExprLambda) {
+            result = interp(expr, env, allApplies, continual);
+        } else if (expr instanceof ExprApply) {
+            result = new ExprApply(extendExpr(expr.rator, env, allApplies, continual),
+                                   extendExpr(expr.rand, env, allApplies, continual));
+            if (continual && !isInfinite(expr)) {
+                result = interp(result, env, allApplies, continual);
             }
-            expr = new Lambda(new Var(shadowName), reduceExpr(expr.body, env, count + 1));
-            return replaceVarR(expr, new Env());
-        } else if (expr instanceof Apply) {
-            Expr lam = reduceExpr(expr.lambda, env, count + 1);
-            if (lam instanceof Lambda) {
-                env = new Env(lam.arg.value, reduceExpr(expr.var, env, count + 1), env);
-                return reduceExpr(lam.body, env, count + 1);
+        } else {
+            throw invalidExpr(expr);
+        }
+
+        extendExprDebugExit(expr, env, allApplies, continual, result);
+
+        return result;
+    }
+
+    private void extendExprDebugEntry(Expr expr, Env env,
+                                      HashSet<String> allApplies, boolean continual) {
+
+        if (this.debug) {
+            System.out.println();
+            System.out.println("==========================================================");
+            System.out.println("-------------------- lambda entry ------------------------");
+            System.out.printf("extendExpr %s, expr: %s\n\n", expr.getClass(), expr);
+            System.out.printf("extendExpr continual: %s\n\n", continual);
+            System.out.printf("extendExpr all applies: %s\n\n", allApplies);
+            System.out.printf("extendExpr env: %s\n\n", env);
+        }
+    }
+
+    private void extendExprDebugExit(Expr expr, Env env,
+                                     HashSet<String> allApplies, boolean continual,
+                                     Expr result) {
+
+        if (this.debug) {
+            System.out.printf("extendExpr expr: %s, %s\n\n", expr.getClass(), expr);
+            System.out.printf("extendExpr result: %s, %s\n\n", result.getClass(), result);
+            System.out.printf("extendExpr all applies: %s\n\n", allApplies);
+            System.out.printf("extendExpr env: %s\n\n", env);
+            System.out.println("-------------------- lambda exit -------------------------");
+            System.out.println("==========================================================");
+            System.out.println();
+        }
+    }
+
+    private Expr extendExprOnce(Expr expr, Env env, HashSet<String> allApplies) {
+        Expr result;
+
+        if (expr instanceof ExprApply) {
+            Expr rator = expr.rator;
+            Expr rand = expr.rand;
+
+            if (rand instanceof ExprLambda) {
+                rand = extendExprLambda(rand, env, allApplies, false);
             } else {
-                return new Apply(lam, reduceExpr(expr.var, env, count + 1));
+                throw invalidExpr(expr);
             }
-        } else if (expr instanceof Var) {
-            Closure c = env.lookup(expr.value);
-            return c.expr;
-        } else if (expr instanceof VarR) {
-            return expr;
+
+            if (rator instanceof ExprLambda) {
+                Env newEnv = env;
+                if (rator.arg != null) {
+                    newEnv = newEnv.add(rator.arg.value, rator);
+                }
+                result = extendExpr(rator.body, newEnv, allApplies, false);
+            } else {
+                throw invalidExpr(expr);
+            }
         } else {
-            throw new RuntimeException("invalid expr: " + expr);
+            throw invalidExpr(expr);
         }
+
+        return result;
     }
 
-    public Expr replaceVarR(Expr expr, Env env) {
-        if (expr instanceof Lambda) {
-            env = new Env(expr.arg.value, new Var(expr.arg.value), env);
-            return new Lambda(expr.arg, replaceVarR(expr.body, env));
-        } else if (expr instanceof Apply) {
-            return new Apply(replaceVarR(expr.lambda, env), replaceVarR(expr.var, env));
-        } else if (expr instanceof Var) {
-            return expr;
-        } else if (expr instanceof VarR) {
-            Closure c = env.lookupGently(expr.value);
-            if (c == null) {
-                return expr;
-            } else {
-                return new Var(c.expr.value);
-            }
-        } else {
-            throw new RuntimeException("invalid expr: " + expr);
+    private ExprVar renameVar(ExprVar expr) {
+        return new ExprVar(MyStr.addLastNumber(expr.value));
+    }
+
+    private ExprVar tryRenameVar(ExprVar target, HashSet<String> vars) {
+        while (vars.contains(target.value)) {
+            target = renameVar(target);
         }
+        return target;
+    }
+
+    private interface VarChanger {
+        String method(String str);
+    }
+
+    private ExprVar tryChangeExprVar(ExprVar target, HashSet<String> vars, VarChanger changer) {
+        target = new ExprVar(changer.method(target.value));
+        return tryRenameVar(target, vars);
+    }
+
+    private Expr exprVarModify(Expr expr, Env env, HashSet<String> vars, VarChanger changer) {
+        Expr result;
+
+        if (expr instanceof ExprVar) {
+            result = env.lookupGently(expr.value);
+            if (result == null) {
+                HashSet<String> newVars = new HashSet<String>(vars);
+                result = tryChangeExprVar(new ExprVar(expr.value), vars, changer);
+                newVars.add(result.value);
+            } else if (!(result instanceof ExprVar)) {
+                result = exprVarModify(result, env, vars, changer);
+            }
+        } else if (expr instanceof ExprLambda) {
+            Env newEnv = env;
+            ExprVar originalArg = expr.arg;
+            ExprVar newArg = expr.arg;
+            HashSet<String> newVars = new HashSet<String>(vars);
+            if (newArg != null) {
+                newArg = tryChangeExprVar(newArg, vars, changer);
+                newEnv = newEnv.add(originalArg.value, newArg);
+                newVars.add(newArg.value);
+            }
+            result = new ExprLambda(newArg, exprVarModify(expr.body, newEnv, newVars, changer));
+        } else if (expr instanceof ExprApply) {
+            result = new ExprApply(exprVarModify(expr.rator, env, vars, changer),
+                                   exprVarModify(expr.rand, env, vars, changer));
+        } else {
+            throw invalidExpr(expr);
+        }
+
+        return result;
+    }
+
+    private Expr exprSimplify(Expr expr, Env env, HashSet<String> vars) {
+        VarChanger changer = str -> MyStr.removeLastNumber(str);
+        return exprVarModify(expr, env, vars, changer);
+    }
+
+    private Expr exprUnify(Expr expr, Env env, HashSet<String> vars) {
+        VarChanger changer = str -> "x";
+        return exprVarModify(expr, env, vars, changer);
+    }
+
+    private boolean isInfinite(Expr expr) {
+        String unifiedExpr = exprUnify(expr, new Env(), new HashSet<String>()).toString();
+        return this.infiniteApplies.contains(unifiedExpr);
+    }
+
+    private HashSet<String> addApply(HashSet<String> allApplies, Expr expr) {
+        HashSet<String> newAllApplies = allApplies;
+        String unifiedExpr = exprUnify(expr, new Env(), new HashSet<String>()).toString();
+
+        boolean existed = allApplies.contains(unifiedExpr);
+        if (!existed) {
+            newAllApplies = new HashSet<String>(newAllApplies);
+            newAllApplies.add(unifiedExpr);
+        } else {
+            this.infiniteApplies.add(unifiedExpr);
+        }
+
+        return newAllApplies;
+    }
+
+    private RuntimeException invalidExpr(Expr expr) {
+        return new RuntimeException(String.format("invalid expr: %s, %s", expr.getClass(), expr));
     }
 }

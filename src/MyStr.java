@@ -1,8 +1,30 @@
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.function.Predicate;
+import java.util.Map;
+
+class VarName {
+    private final String letter;
+    private final int number;
+
+    public VarName(String letter, int number) {
+        this.letter = letter;
+        this.number = number;
+    }
+
+    public String getLetter() {
+        return letter;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+}
 
 class MyStr {
+    private static final Pattern varNamePattern = Pattern.compile("^(.*[^0-9]+)([0-9]*)$");
+    private static final Pattern spacePattern = Pattern.compile("^\\s+$");
+
     public static String head(String str) {
         int len = str.length();
         if (len == 0) {
@@ -21,9 +43,8 @@ class MyStr {
         }
     }
 
-    public static Boolean isSpace(String str) {
-        Pattern pattern = Pattern.compile("^\\s+$");
-        Matcher m = pattern.matcher(str);
+    public static boolean isSpace(String str) {
+        Matcher m = spacePattern.matcher(str);
         return m.find();
     }
 
@@ -45,17 +66,45 @@ class MyStr {
         return splitByP(str, p, "");
     }
 
+    public static VarName parseVarName(String str) {
+        Matcher matcher = varNamePattern.matcher(str);
+
+        String letter = "_";
+        int number = 0;
+
+        matcher.find();
+        if (!matcher.group(1).isEmpty()) {
+            letter = matcher.group(1);
+        }
+
+        if (!matcher.group(2).isEmpty()) {
+            number = Integer.parseInt(matcher.group(2));
+        }
+
+        return new VarName(letter, number);
+    }
+
+    public static String findVarNameLetter(String str) {
+        VarName name = parseVarName(str);
+        return name.getLetter();
+    }
+
     public static String addLastNumber(String str) {
-        Pattern pattern = Pattern.compile("^(.*[^0-9]+)([0-9]*)$");
-        Matcher matcher = pattern.matcher(str);
-        int baseInt;
+        VarName name = parseVarName(str);
+        String letter = name.getLetter();
+        int number = name.getNumber();
+
+        return letter + Integer.toString(number + 1);
+    }
+
+    public static String removeLastNumber(String str) {
+        Matcher matcher = varNamePattern.matcher(str);
 
         matcher.find();
         if (matcher.group(2).isEmpty()) {
-            baseInt = 0;
+            return str;
         } else {
-            baseInt = Integer.parseInt(matcher.group(2));
+            return matcher.group(1);
         }
-        return matcher.group(1) + Integer.toString(baseInt + 1);
     }
 }

@@ -1,15 +1,5 @@
 import java.util.Arrays;
 
-class IllSyntaxException extends LambdaInterpException{
-	private static final long serialVersionUID = 9053892733742415984L;
-	public IllSyntaxException(){
-        super();
-    }
-    public IllSyntaxException(String msg){
-        super(msg);
-    }
-}
-
 class Match {
     public ExprS expr;
     public Token[] tokens;

@@ -4,28 +4,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-class IllTokenException extends LambdaInterpException{
-	private static final long serialVersionUID = 1415981412922061572L;
-	public IllTokenException(){
-        super();
-    }
-    public IllTokenException(String msg){
-        super(msg);
-    }
-}
-
 class Keyword {
     final static String LAMBDA_SIGN = "%";
     final static String LAMBDA_DOT = ".";
     final static HashSet<String> SYMBOLS = new HashSet<String>(Arrays.asList(LAMBDA_SIGN, LAMBDA_DOT, "(", ")"));
 
-    public static Boolean isId(String str) {
+    public static boolean isId(String str) {
         Pattern r = Pattern.compile("^[a-zA-z0-9]$");
         Matcher m = r.matcher(str);
         return m.find();
     }
 
-    public static Boolean isKey(String str) {
+    public static boolean isKey(String str) {
         return SYMBOLS.contains(str);
     }
 
