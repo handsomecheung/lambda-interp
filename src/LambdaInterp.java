@@ -31,9 +31,8 @@ public class LambdaInterp {
             return true;
         } else {
             Expr expr = createExpr(input);
-            expr = interpExpr(expr);
-            expr = reduceExpr(expr);
-            System.out.println("Result: " + expr);
+            Expr val = interpExpr(expr);
+            System.out.println("Result: " + val);
             return true;
         }
     }
@@ -47,10 +46,6 @@ public class LambdaInterp {
 
     private static Expr interpExpr(Expr expr) {
         return interp.interp(expr);
-    }
-
-    private static Expr reduceExpr(Expr expr) {
-        return interp.reduceExpr(expr, new Env());
     }
 
     private static boolean isDefinition(String str) {
@@ -69,8 +64,26 @@ public class LambdaInterp {
         }
     }
 
+    private static void test() {
+        // interp.enableDebug();
+
+        java.sql.Timestamp t1 = new java.sql.Timestamp(System.currentTimeMillis());
+
+        String input = "iszero (sub 9 9)";
+
+        Expr expr = createExpr(input);
+        expr = interpExpr(expr);
+
+        java.sql.Timestamp t2 = new java.sql.Timestamp(System.currentTimeMillis());
+        System.out.println("seconds to run: " + (t2.getTime() - t1.getTime()) / 1000.0);
+        System.out.println("");
+
+        System.out.println("Result: " + expr);
+    }
+
     public static void main(String [] args) {
         addPreDefinition();
+        interp.disableSilence();
         repl();
     }
 }

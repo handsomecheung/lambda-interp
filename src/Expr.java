@@ -1,24 +1,28 @@
 abstract class Expr {
-    public String value;
-
-    public Var arg;
+    // ExprLambda
+    public ExprVar arg;
     public Expr body;
 
-    public Expr lambda;
-    public Expr var;
+    // ExprApply
+    public Expr rator;
+    public Expr rand;
 
+    // ExprVar
+    public String value;
 }
 
-class Lambda extends Expr {
-    public Lambda(Expr body) {
+class ExprLambda extends Expr {
+    public ExprLambda(Expr body) {
         this.body = body;
     }
-    public Lambda(Var arg, Expr body) {
+
+    public ExprLambda(Expr arg, Expr body) {
+        this.arg  = new ExprVar(arg.value);
+        this.body = body;
+    }
+
+    public ExprLambda(ExprVar arg, Expr body) {
         this.arg  = arg;
-        this.body = body;
-    }
-    public Lambda(Expr arg, Expr body) {
-        this.arg  = new Var(arg.value);
         this.body = body;
     }
 
@@ -33,30 +37,19 @@ class Lambda extends Expr {
     }
 }
 
-class Apply extends Expr {
-    public Apply(Expr lambda, Expr var) {
-        this.lambda = lambda;
-        this.var = var;
+class ExprApply extends Expr {
+    public ExprApply(Expr rator, Expr rand) {
+        this.rator = rator;
+        this.rand = rand;
     }
 
     public String toString() {
-        return "(" + this.lambda + " " + this.var + ")";
+        return "(" + this.rator + " " + this.rand + ")";
     }
 }
 
-class Var extends Expr {
-    public Var(String value) {
-        this.value = value;
-    }
-
-    public String toString() {
-        return this.value;
-    }
-}
-
-// for reduceExpr
-class VarR extends Expr {
-    public VarR(String value) {
+class ExprVar extends Expr {
+    public ExprVar(String value) {
         this.value = value;
     }
 

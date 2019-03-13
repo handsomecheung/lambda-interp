@@ -14,3 +14,8 @@ hs_err_pid*
 TestScript
 .classpath
 .project
+
+out/
+bin/
+
+note.txt
